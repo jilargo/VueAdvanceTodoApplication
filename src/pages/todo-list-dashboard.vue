@@ -1,6 +1,11 @@
 <template>
   <div class="app-container">
+    <div v-if="showNotification" class="toast">
+      {{ notification }}
+    </div>
+
     <div class="todo-card">
+     
       <h1>Advanced Todo Application</h1>
 
       <label>Add new task</label>
@@ -24,6 +29,8 @@ import { ref } from 'vue';
 
 const newTodo = ref('');
 const todos = ref([]);
+const notification = ref('');
+const showNotification = ref(false);
 
 //function to add a new task
 function addTask() {
@@ -36,15 +43,17 @@ function addTask() {
 //function to remove a task
 function removeTask(index) {
   const removeTodo = todos.value[index];
-  if (!removeTodo) {
-    console.error('Invalid index:', index);
-    return;
+  if (!removeTodo) return;
+  
+    todos.value.splice(index, 1);
+    
+    notification.value = `"${removeTodo}" was removed`;
+    showNotification.value = true;
 
+    setTimeout(() => {
+      showNotification.value = false;
+    }, 2000);
   }
-  todos.value.splice(index, 1);
-  //console.log('Current Todos:', todos.value);
-  console.log(`${removeTodo} was being removed`);
-}
 </script>
 <style scoped>
 /* Center everything */
@@ -109,12 +118,17 @@ li {
   align-items: center;
   padding: 12px 10px;
   margin-bottom: 8px;
-  border-left: 4px solid #4caf50; /* simulates notebook spine */
-  border-bottom: 1px dashed #bbb; /* horizontal notebook line */
-  background: #fffbea; /* light paper color */
+  border-left: 4px solid #4caf50;
+  /* simulates notebook spine */
+  border-bottom: 1px dashed #bbb;
+  /* horizontal notebook line */
+  background: #fffbea;
+  /* light paper color */
   border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  font-family: 'Georgia', serif; /* gives handwritten notebook feel */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-family: 'Georgia', serif;
+  font-size: medium;
+  /* gives handwritten notebook feel */
 }
 
 
@@ -131,5 +145,36 @@ li {
 .remove-btn:hover {
   background: #d32f2f;
 }
-</style>
 
+.toast {
+  position: fixed;
+  top: 50px;
+  right: 440px;
+  background: #323232;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+</style>
