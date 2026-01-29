@@ -39,7 +39,7 @@ jobs:
 
       # 7. Wait for server
       - name: Wait for server
-        run: npx wait-on http://localhost:5173
+        run: npx wait-on http://localhost:5173 --timeout 60000
 
       # 8. Run Playwright tests
       - name: Run Playwright tests
