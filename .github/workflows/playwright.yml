@@ -1,0 +1,49 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main ]  # or master / your default branch
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20  # match your local Node version
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Build Vue app
+      - name: Build Vue app
+        run: npm run build
+
+      # 5. Start server in background
+      - name: Start dev server
+        run: npm run dev &
+        # optional: wait for server to be ready
+      - name: Wait for server
+        run: npx wait-on http://localhost:5173
+
+      # 6. Run Playwright tests
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      # 7. Upload Playwright report
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report
