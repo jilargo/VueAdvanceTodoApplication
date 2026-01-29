@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest #Virtual Machine
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Checkout code
@@ -25,29 +25,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 4. Build Vue app
+      # 4. Install Playwright browsers BEFORE running tests
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      # 5. Build Vue app
       - name: Build Vue app
         run: npm run build
 
-      # 5. Start server in background
-      - name: Start dev server
-        run: npm run dev &
-        # optional: wait for server to be ready
+      # 6. Serve production build
+      - name: Serve production build
+        run: npx serve -s dist -l 5173 &
+
+      # 7. Wait for server
       - name: Wait for server
         run: npx wait-on http://localhost:5173
 
-      # 6. Run Playwright tests
+      # 8. Run Playwright tests
       - name: Run Playwright tests
         run: npx playwright test
 
-      # 7. Upload Playwright report
+      # 9. Upload Playwright report
       - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report
-
-         # 6. Install playwright browsers 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
