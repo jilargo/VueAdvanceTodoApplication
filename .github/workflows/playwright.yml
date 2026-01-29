@@ -47,3 +47,7 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report
+
+         # 6. Install playwright browsers 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
