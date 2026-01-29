@@ -1,180 +1,372 @@
 <template>
-  <div class="app-container">
-    <div v-if="showNotification" class="toast">
-      {{ notification }}
+  <div class="todo-card">
+  <!-- Calendar Top Right -->
+  <div class="calendar-container">
+      <button @click="toggleCalendar" class="calendar-btn">📅</button>
+      <input 
+        v-if="showCalendar" 
+        type="date" 
+        v-model="selectedDate" 
+        class="calendar-popup" 
+      />
     </div>
 
-    <div class="todo-card">
-     
-      <h1>Advanced Todo Application</h1>
-
-      <label>Add new task</label>
-      <input v-model="newTodo" placeholder="Add a new todo" />
-
-      <button class="add-btn" @click="addTask">Add task</button>
-
-      <ul>
-        <li v-for="(todo, index) in todos" :key="index">
-          <span>{{ todo }}</span>
-          <button class="remove-btn" @click="removeTask(index)">Remove</button>
-        </li>
-      </ul>
+  <!-- Header -->
+  <div class="header" v-if="loggedInUser">
+    <div class="profile-section">
+      <img :src="`http://localhost:3000/${loggedInUser.profilePicture}`" class="profile-picture" alt="Profile" />
+      <div class="user-info">
+        <p class="user-name">{{ loggedInUser.firstName }} {{ loggedInUser.lastName }}</p>
+        <button class="logout-btn" @click="logout">Logout</button>
+      </div>
     </div>
   </div>
+
+  <!-- Title -->
+  <h1 class="title">Advanced Todo Application</h1>
+
+  <!-- Add Todo -->
+  <div class="input-group">
+    <input v-model="newTodo" placeholder="Add a new task..." />
+    <button class="add-btn" @click="addTask">➕ Add</button>
+  </div>
+
+  <!-- Todo List -->
+  
+  <div class="todo-list-container">
+  <ul>
+    <li v-for="todo in todos" :key="todo.id" class="todo-item">
+      {{ todo.title }} - {{ todo.date }}
+      <button @click="removeTask(todo.id)">🗑️</button>
+    </li>
+  </ul>
+</div>
+
+
+</div>
+
 </template>
 
+<script setup lang="ts">
+import axios from 'axios'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-<script setup>
-import { ref } from 'vue';
+interface Todo {
+  id: number
+  title: string
+  date: string
+}
 
-const newTodo = ref('');
-const todos = ref([]);
-const notification = ref('');
-const showNotification = ref(false);
+interface User {
+  firstName: string
+  lastName: string
+  profilePicture: string
+}
 
-//function to add a new task
-function addTask() {
-  if (newTodo.value.trim() !== '') {
-    todos.value.push(newTodo.value.trim());
-    newTodo.value = '';
-    console.log('Current Todos:', todos.value);
+
+
+
+const newTodo = ref('')
+const todos = ref<Todo[]>([])
+const loggedInUser = ref<User | null>(null)
+const notification = ref('')
+const showNotification = ref(false)
+
+// Load todos and user data
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  if (!token) return
+
+  // Fetch todos
+  try {
+    const res = await axios.get('http://localhost:3000/todos', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    todos.value = res.data
+  } catch (err) {
+    console.error('Failed to load todos', err)
+  }
+
+  // Load logged in user
+  const userData = localStorage.getItem('loggedInUser')
+  if (userData) loggedInUser.value = JSON.parse(userData)
+})
+
+//calendar
+const showCalendar = ref(false)
+const selectedDate = ref<string>('')
+
+// Toggle calendar visibility
+function toggleCalendar() {
+  showCalendar.value = !showCalendar.value
+}
+const router = useRouter()
+function logout() {
+  // Clear user data
+  localStorage.removeItem('token')
+  localStorage.removeItem('loggedInUser')
+  loggedInUser.value = null
+
+  // Redirect to login page
+  router.push('/login')
+}
+// Add new todo
+async function addTask() {
+  // Validate title and date
+  if (!newTodo.value.trim()) return alert('Task title is required!')
+  if (!selectedDate.value) return alert('Please select a date!')
+
+  const token = localStorage.getItem('token')
+  if (!token) return alert('No token found!')
+
+  try {
+    const res = await axios.post(
+      'http://localhost:3000/todos',
+      { 
+        title: newTodo.value,
+        date: selectedDate.value
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    todos.value.unshift({ ...res.data, completed: false })
+    newTodo.value = ''
+    selectedDate.value = ''
+    showCalendar.value = false
+  } catch (err) {
+    console.error('Failed to add todo', err)
   }
 }
-//function to remove a task
-function removeTask(index) {
-  const removeTodo = todos.value[index];
-  if (!removeTodo) return;
-  
-    todos.value.splice(index, 1);
-    
-    notification.value = `"${removeTodo}" was removed`;
-    showNotification.value = true;
 
-    setTimeout(() => {
-      showNotification.value = false;
-    }, 2000);
+// Remove a todo
+async function removeTask(id: number) {
+  const token = localStorage.getItem('token')
+  if (!token) return
+
+  try {
+    await axios.delete(`http://localhost:3000/todos/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    todos.value = todos.value.filter(todo => todo.id !== id)
+
+    notification.value = 'Task removed'
+    showNotification.value = true
+    setTimeout(() => (showNotification.value = false), 2000)
+  } catch (err) {
+    console.error('Failed to delete todo', err)
   }
+}
 </script>
-<style scoped>
-/* Center everything */
+<style>
 .app-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: center; /* horizontal center of the card */
+  align-items: center;     /* vertical center of the card */
   min-height: 100vh;
-  background: #f4f6f8;
-  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #eef2f7, #f9fafb);
+  font-family: 'Inter', Arial, sans-serif;
 }
 
-/* Card */
+/* Only center the card itself, not its inner content */
 .todo-card {
+  position: relative;
   background: white;
-  padding: 24px;
-  width: 350px;
+  padding: 32px;
+  width: 520px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+
+  /* Ensure inner content stays left-aligned */
+  display: block;
+}
+
+/* Header and profile */
+.header {
+  display: flex;
+  margin-bottom: 24px;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-picture {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #22c55e;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.logout-btn {
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: #ef4444;
+  color: white;
+  border: none;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
 }
 
 /* Title */
-.todo-card h1 {
+.title {
   text-align: center;
+  font-size: 1.9rem;
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+/* Input group */
+.input-group {
+  display: flex;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
-/* Input */
-.todo-card input {
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
 }
 
-/* Buttons */
 .add-btn {
-  width: 50%;
-  padding: 8px;
-  background: #4caf50;
+  padding: 12px 18px;
+  background: #22c55e;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
-}
-
-.add-btn:hover {
-  background: #43a047;
+  font-weight: 600;
 }
 
 /* Todo list */
 ul {
   list-style: none;
   padding: 0;
-  margin-top: 16px;
+  margin: 0;
+}
+.todo-item {
+  margin-bottom: 10px;  /* keep spacing between todos */
 }
 
 li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 10px;
-  margin-bottom: 8px;
-  border-left: 4px solid #4caf50;
-  /* simulates notebook spine */
-  border-bottom: 1px dashed #bbb;
-  /* horizontal notebook line */
-  background: #fffbea;
-  /* light paper color */
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  font-family: 'Georgia', serif;
-  font-size: medium;
-  /* gives handwritten notebook feel */
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
-
-/* Remove button */
-.remove-btn {
-  background: #e53935;
+/* Toast */
+.toast {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  background: #111827;
   color: white;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+/* Calendar inside the card */
+.calendar-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 10;
+}
+
+.calendar-btn {
+  background: #22c55e;
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  color: white;
+  font-size: 1.2rem;
+  padding: 6px 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.remove-btn:hover {
-  background: #d32f2f;
+.calendar-btn:hover {
+  background: #16a34a;
 }
 
-.toast {
-  position: fixed;
-  top: 50px;
-  right: 440px;
-  background: #323232;
-  color: white;
-  padding: 12px 16px;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  animation: fadeInOut 2s ease;
+.calendar-popup {
+  margin-top: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  10% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  90% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
+/* ---------- Todo List Container ---------- */
+.todo-list-container {
+  max-height: 300px;        /* fixed height for scrolling */
+  overflow-y: auto;         /* enable vertical scroll */
+  margin-top: 12px;         /* spacing from input group */
+  padding: 0 8px;           /* inner spacing */
+  box-sizing: border-box;   /* include padding in height */
 }
+
+/* ---------- List Reset ---------- */
+.todo-list-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ---------- Todo Items ---------- */
+.todo-list-container li.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+/* ---------- Modern Scrollbar ---------- */
+.todo-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.todo-list-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+
+.todo-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Optional: hover effect for scrollbar */
+.todo-list-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0,0,0,0.25);
+}
+
 </style>

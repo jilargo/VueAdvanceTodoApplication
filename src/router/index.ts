@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { Router } from 'express'
 import Login from '@/pages/login.vue'
-import Register from '@/pages/register.vue'
 import Dashboard from '@/pages/todo-list-dashboard.vue'
 import SignUp from '@/pages/signUp.vue'
+
 
 
   const routes = [
@@ -28,4 +29,6 @@ router.beforeEach((to, from, next) => {
   }
 })
 
+
+  
 export default router

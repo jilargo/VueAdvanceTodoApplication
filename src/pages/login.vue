@@ -37,17 +37,26 @@ const router = useRouter()
 
 const handleLogin = async () => {
   errorMessage.value = ''
+
   try {
     const res = await axios.post('http://localhost:3000/login', {
       email: email.value,
       password: password.value
     })
+
     localStorage.setItem('token', res.data.token)
+    localStorage.setItem(
+      'loggedInUser',
+      JSON.stringify(res.data.user)
+    )
+
     router.push('/dashboard')
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.error || 'Login failed'
+    errorMessage.value =
+      err.response?.data?.error || 'Login failed'
   }
 }
+
 </script>
 
 <style scoped>

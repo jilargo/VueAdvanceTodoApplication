@@ -3,8 +3,13 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = 'CHANGE_THIS_SECRET'
 
+interface JwtUserPayLoad{
+  id: number
+  email: string
+}
 export interface AuthRequest extends Request {
-  user?: any
+  user?: JwtUserPayLoad
+  
 }
 
 export const auth = (
@@ -12,15 +17,23 @@ export const auth = (
   res: Response,
   next: NextFunction
 ) => {
-  const header = req.headers.authorization
-  if (!header) return res.status(401).json({ error: 'No token' })
+  const authheader = req.headers.authorization
+  if (!authheader) return res.status(401).json({ error: 'No token' })
 
-  const token = header.split(' ')[1]
+  const token = authheader.split(' ')[1]
+
+  if (!token) {
+    return res.status(401).json({ error: 'Malformed token' })
+  }
 
   try {
-    req.user = jwt.verify(token, JWT_SECRET)
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtUserPayLoad
+    req.user = decoded
     next()
-  } catch {
-    res.status(401).json({ error: 'Invalid token' })
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' })
   }
+  
+
 }
+
