@@ -25,10 +25,10 @@ db.run(`
 
 // Create users table if it doesn't exist
 db.serialize(() => {
-  // db.run(`DROP TABLE IF EXISTS users`, (err) => {
-  //   if (err) console.error(err)
-  //   else console.log('Users table dropped')
-  // })
+  db.run(`DROP TABLE IF EXISTS users`, (err) => {
+    if (err) console.error(err)
+    else console.log('Users table dropped')
+  })
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
