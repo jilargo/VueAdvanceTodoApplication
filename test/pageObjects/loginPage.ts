@@ -12,7 +12,7 @@ export class loginPage {
         await this.page.getByPlaceholder('Password').fill(password);
         //await this.page.getByRole('button', { name: 'Login' }).click();
     await Promise.all([
-        this.page.waitForURL('**/dashboard', { timeout: 60000 }),
+        this.page.waitForURL('**/dashboard'),
         this.page.getByRole('button', { name: 'Login' }).click(),
     ])
     }
